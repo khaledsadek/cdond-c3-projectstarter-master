@@ -7,7 +7,7 @@
 - name: "install Node.js 13"
   become: true
   apt:
-    name: ["node.js"]
+    name: ["nodejs"]
     state: latest
     update_cash: yes
 
