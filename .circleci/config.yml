@@ -335,7 +335,7 @@ jobs:
       - destroy-environment
       - revert-migrations 
        
-smoke-test:
+  smoke-test:
     docker:
       - image: cimg/base:stable
     steps:
@@ -368,7 +368,7 @@ smoke-test:
             fi
       - destroy-environment
       - revert-migrations
-      
+
       # Here's where you will add some code to rollback on failure  
 
 #   cloudfront-update:
