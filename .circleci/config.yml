@@ -292,27 +292,49 @@ jobs:
 
       - destroy-environment
       - revert-migrations
-
-            
-      # Here's where you will add some code to rollback on failure      
                     
-#   deploy-backend:
-#     docker:
-#       # Docker image here that supports Ansible
-#     steps:
-#       # Checkout code from git
-#       # Add ssh keys with fingerprint
-#       # attach workspace
-#       - run:
-#           name: Install dependencies
-#           command: |
-#             # your code here
-#       - run:
-#           name: Deploy backend
-#           command: |
-#             # your code here
-#       # Here's where you will add some code to rollback on failure  
+  deploy-backend:
+    docker:
+      - image: cimg/node:13.8.0 
+    steps:
+      - checkout
+      - install_awscli
+      - install_ansible
+      - install_nodejs
+      - add_ssh_keys:
+          fingerprints: ["ca:e1:f9:ab:a8:12:a2:26:d8:53:21:93:8b:95:c9:8b"]
+      - attach_workspace:
+          at: ~/
+      - restore_cache:
+          keys: [backend-deps]    
+      - run:
+          name: Install dependencies
+          command: |
+            cd backend
+            npm install
+      - run:
+          name: package backend
+          command: |
+            cd backend
+            npm run build
+            tar -czf artifact.tar.gz dist/* package*
 
+            cd ..
+            cp backend/artifact.tar.gz .circleci/ansible/roles/deploy/files
+      - run:
+          name: Deploy backend
+          command: |
+            export  TYPEORM_MIGRATIONS_DIR=./migrations
+            export  TYPEORM_ENTITIES=./modules/domain/**/*.entity{.js,.js}
+            export  TYPEORM_MIGRATIONS=./migrations/*.js
+
+            cat backend/.env
+            cd .circleci/ansible
+            ansible-playbook -i inventory.txt configure-server.yml
+
+      - destroy-environment
+      - revert-migrations 
+       
 #   smoke-test:
 #     docker:
 #       # Lightweight Docker image 
@@ -395,8 +417,8 @@ workflows:
           requires: [configure-infrastructure]
       - deploy-frontend:
           requires: [run-migrations]
-      # - deploy-backend:
-      #     requires: [run-migrations]
+      - deploy-backend:
+          requires: [run-migrations]
       # - smoke-test:
       #     requires: [deploy-backend, deploy-frontend]
       # - cloudfront-update:
